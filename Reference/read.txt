@@ -1,0 +1,5 @@
+Taruh file reference anda disini, pastikan setiap reference memiliki foldernya masing-masing
+
+dan jangan lupa lakukan index pada reference anda sebelum running pipeline dengan cara
+
+bwa index <youreference.fasta>
