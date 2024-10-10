@@ -6,7 +6,7 @@ Sebelum Running Pipeline, Anda harus menginstall
 2. bwa
 3. samtools
 
-Jika Anda tidak memiliki aplikasi tersebut dengan cara
+Jika Anda tidak memiliki aplikasi tersebut anda dapat menginstall dengan cara
 bash Installation.sh
 
 Anda dapat running pipeline dengan cara
