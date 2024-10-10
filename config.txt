@@ -1,0 +1,2 @@
+fastq_folder=./FastQ/<your fastq file>
+reference_folder=./Reference/<your folder reference>
