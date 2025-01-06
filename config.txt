@@ -1,4 +1,4 @@
-fastq_folder=./FastQ/SARS-CoV-2/P268
-reference_folder=./Reference/SARS-CoV-2
-bedfile=Yes
-bedfile_path=./bed_files/SARS-CoV-2.primer.bed
+fastq_folder=./(Your Fastq Folder)
+reference_folder=./(Your Reference Folder)
+bedfile=Yes (if you don't have bedfile, then type 'No' then the samtools trim won't run
+bedfile_path=./(Your bedfile)
