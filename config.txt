@@ -1,2 +1,4 @@
-fastq_folder=./FastQ/<your fastq file>
-reference_folder=./Reference/<your folder reference>
+fastq_folder=./FastQ/SARS-CoV-2/P268
+reference_folder=./Reference/SARS-CoV-2
+bedfile=Yes
+bedfile_path=./bed_files/SARS-CoV-2.primer.bed
