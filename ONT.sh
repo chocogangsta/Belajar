@@ -102,7 +102,7 @@ for ((i=0; i<$total_files; i+=1)); do
     sample_name=$(basename "${arr[$i]}" .fastq.gz)
 
     # Run fastp for trimming
-    (fastp -i "${arr[$i]}" -A -q 20 -o "${sample_name}_trimmed.fastq.gz" -h "${sample_name}_fastp.html" 2>/dev/null) &
+    (fastp -i "${arr[$i]}" -A -q 15 -o "${sample_name}_trimmed.fastq.gz" -h "${sample_name}_fastp.html" 2>/dev/null) &
     pid=$!
     
     while ps -p $pid > /dev/null; do
@@ -126,7 +126,7 @@ for ((i=0; i<$total_files; i+=1)); do
     sample_name=$(basename "${arr[$i]}" .fastq.gz)
 
     # Run Minimap2 with trimmed reads
-    (minimap2 -ax map-ont "$ref_file" "${sample_name}_trimmed.fastq.gz" > "$sample_name.sam" 2>/dev/null) &
+    (minimap2 -ax map-ont --secondary=no -L --MD -A 2 -B 4 -O 4,24 -E 2,1 -t 1 "$ref_file" "${sample_name}_trimmed.fastq.gz" > "$sample_name.sam" 2>/dev/null) &
     pid=$!
     
     while ps -p $pid > /dev/null; do
@@ -179,7 +179,7 @@ for sam_file in $sam_files; do
     progress_bar $current_conversion $total_conversions "Convert SAM to BAM"
     
     # Menggunakan samtools view untuk konversi SAM ke BAM
-    (samtools view -q 20 -m 20 -bS "$sam_file" > "${sam_file%.sam}.bam" 2>/dev/null) &
+    (samtools view -q 15 -m 15 -bS "$sam_file" > "${sam_file%.sam}.bam" 2>/dev/null) &
     pid=$!
 
     while ps -p $pid > /dev/null; do
@@ -265,7 +265,7 @@ for sorted_bam_file in $sorted_bam_files; do
     ((current_consensus++))
     progress_bar $current_consensus $total_consensus "Generating BCF file"
     
-    (bcftools mpileup -Ou -f "$ref_file" "$sorted_bam_file" 2>/dev/null | bcftools call -mv -Ob -o "${sorted_bam_file%.bam}_variants.bcf" > /dev/null 2>&1) &
+    (bcftools mpileup -Ou -B -Q5 --max-BQ 30 -I -C 15  -f "$ref_file" "$sorted_bam_file" 2>/dev/null | bcftools call -mv -Ob -o "${sorted_bam_file%.bam}_variants.bcf" > /dev/null 2>&1) &
     pid=$!
 
 
@@ -380,17 +380,22 @@ echo -e "${GREEN}\nCompleted!${NC}"
 
 echo "" # Pindah ke baris baru setelah progress selesai
 
-# 9. Output folder berdasarkan tanggal
+# 13. Output folder berdasarkan tanggal
 current_date=$(date +"%Y-%m-%d")
 mkdir -p "$current_date/consensus"
 mkdir -p "$current_date/report"
 mv "$fastq_folder/temporary"/*_coverage.tsv "$current_date/report"
 mv "$fastq_folder/temporary"/*_depth.tsv "$current_date/report"
-mv *fastq/temporary/*.fasta "$current_date/consensus"
+mv "$fastq_folder/temporary"/*.fasta "$current_date/consensus"
 rm *.fastq.gz
 rm *.html*
 rm *.json
-rm -r -f fastq/temporary
+rm -r -f "$fastq_folder/temporary"/
+
+fastqc "$fastq_folder"/*fastq.gz -o "$current_date/report"  2>/dev/null 
+multiqc "$current_date/report"/*fastqc*  2>/dev/null 
+rm -r -f "$current_date/report/multiqc_data"/
+rm -r "$current_date/report"/*fastqc*
 
 # Menghitung waktu selesai skrip
 end_time=$(date +%s)
