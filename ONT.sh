@@ -42,7 +42,7 @@ run_fastp() {
     for file in "${files[@]}"; do
         ((count++)); name=$(basename "$file" .fastq.gz)
         progress_bar $count $total "Trimming: $name"
-        fastp -i "$file" -A -q 5 -o "$fastq_folder/temporary/${name}_trimmed.fastq.gz" -h "$fastq_folder/temporary/${name}_fastp.html" >/dev/null 2>&1
+        fastp -i "$file" -A -q 20 -o "$fastq_folder/temporary/${name}_trimmed.fastq.gz" -h "$fastq_folder/temporary/${name}_fastp.html" >/dev/null 2>&1
     done
     echo -e "${GREEN}\nCompleted fastp${NC}"
 }
@@ -71,7 +71,7 @@ run_variant_calling() {
 
         bcftools mpileup -Ou -f "$ref_file" "$sorted" | \
         bcftools call -mv -Ou -V indels | \
-        bcftools filter -i 'QUAL>=5 && DP>=5' -Ob -o "$fastq_folder/temporary/${name}_variants.bcf"
+        bcftools filter -i 'QUAL>=15 && DP>=20' -Ob -o "$fastq_folder/temporary/${name}_variants.bcf"
 
         bcftools index "$fastq_folder/temporary/${name}_variants.bcf"
     done
@@ -94,7 +94,7 @@ create_masking() {
         bed="$fastq_folder/temporary/${name}_ext.bed"
         mask="$fastq_folder/temporary/${name}_mask.bed"
         if [ -f "$bed" ]; then
-            bedtools genomecov -bga -ibam "$sorted_bam" | awk '$4 < 5' | \
+            bedtools genomecov -bga -ibam "$sorted_bam" | awk '$4 < 15' | \
             bedtools subtract -a - -b "$bed" > "$mask"
         fi
     done
