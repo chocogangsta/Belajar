@@ -102,7 +102,7 @@ for ((i=0; i<$total_files; i+=2)); do
     sample_name=$(basename "${arr[$i]}" .fastq.gz)
 
     # Run fastp for trimming
-    (fastp -i "${arr[$i]}" -I "${arr[$i+1]}" -o "${sample_name}_trimmed_R1.fastq.gz" -O "${sample_name}_trimmed_R2.fastq.gz" -h "${sample_name}_fastp.html" -j "${sample_name}_fastp.json" 2>/dev/null) &
+    (fastp -q 20 -A -i "${arr[$i]}" -I "${arr[$i+1]}" -o "${sample_name}_trimmed_R1.fastq.gz" -O "${sample_name}_trimmed_R2.fastq.gz" -h "${sample_name}_fastp.html" -j "${sample_name}_fastp.json" 2>/dev/null) &
     pid=$!
     
     while ps -p $pid > /dev/null; do
@@ -179,7 +179,7 @@ for sam_file in $sam_files; do
     progress_bar $current_conversion $total_conversions "Convert SAM to BAM"
     
     # Menggunakan samtools view untuk konversi SAM ke BAM
-    (samtools view -h -F 4 -F 2048 -@ 7 "$sam_file" > "${sam_file%.sam}.bam" 2>/dev/null) &
+    (samtools view -q 20 -h -F 4 -F 2048 -@ 7 "$sam_file" > "${sam_file%.sam}.bam" 2>/dev/null) &
     pid=$!
 
     while ps -p $pid > /dev/null; do
@@ -265,7 +265,7 @@ for sorted_bam_file in $sorted_bam_files; do
     ((current_consensus++))
     progress_bar $current_consensus $total_consensus "Generating Consensus"
     
-    (samtools mpileup -aa -A -d 0 -Q 0 -q 0 "$sorted_bam_file" 2>/dev/null | ivar consensus -t 0.2 -p  "${sorted_bam_file%.bam}.fa" > /dev/null 2>&1) &
+    (samtools mpileup -aa -A -d 0 -Q 0 -q 0 "$sorted_bam_file" 2>/dev/null | ivar consensus -t 0.75 -m 20 -q 20 -p  "${sorted_bam_file%.bam}.fa" > /dev/null 2>&1) &
     pid=$!
 
     while ps -p $pid > /dev/null; do
