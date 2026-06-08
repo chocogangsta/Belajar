@@ -1,7 +1,7 @@
 # In-House Bioinformatics Pipeline
 
 
-## 🧬 In-House Bioinformatics Pipeline
+##  In-House Bioinformatics Pipeline
 
 Pipeline bioinformatika sederhana untuk pembelajaran analisis data sekuensing berbasis **Illumina** dan **Oxford Nanopore Technology (ONT)**.
 
@@ -30,10 +30,15 @@ Sebelum menjalankan pipeline, pastikan Anda telah menginstal software berikut:
 
 <br>
 
+---
+##  🧬 Pipeline Structure
+
+![image alt](https://github.com/chocogangsta/Belajar/blob/73a05e8513de70176a7fa194431390fcf17b9190/for%20github.png)
 
 ---
+<br>
 
-## 📂 Pipeline Structure
+## 📂 Folder Structure
 
 ```text
 project/
