@@ -110,7 +110,7 @@ for r1 in "${arr[@]}"; do
 sample=$(basename "$r1" | sed 's/_R1.*//')
 r2=${r1/_R1/_R2}
 
-fastp -i "$r1" -I "$r2" \
+fastp -q 20 -A -i "$r1" -I "$r2" \
 -o work/${sample}_R1.trim.fastq.gz \
 -O work/${sample}_R2.trim.fastq.gz \
 >/dev/null 2>&1
@@ -147,8 +147,8 @@ bwa mem "$RSV_B_REF" work/${sample}_R1.trim.fastq.gz \
 work/${sample}_R2.trim.fastq.gz \
 > work/${sample}_B.sam 2>/dev/null
 
-A=$(samtools view -c -F4 work/${sample}_A.sam)
-B=$(samtools view -c -F4 work/${sample}_B.sam)
+A=$(samtools view -q 20 -c -F4 work/${sample}_A.sam)
+B=$(samtools view -q 20 -c -F4 work/${sample}_B.sam)
 
 if [ "$A" -gt "$B" ]; then
  mv work/${sample}_A.sam work/${sample}.sam
@@ -190,7 +190,7 @@ for sam in work/*.sam; do
 
 sample=$(basename "$sam" .sam)
 
-samtools view -bS "$sam" |
+samtools view -q 20 -bS "$sam" |
 samtools sort -o work/${sample}.sorted.bam >/dev/null 2>&1
 
 samtools index work/${sample}.sorted.bam >/dev/null 2>&1
@@ -252,7 +252,7 @@ ref=$(cat work/${sample}.ref)
 
 samtools mpileup -aa -A -d 0 -Q 0 \
 -f "$ref" "$bam"  2>> logs/bcftools.log |
-ivar consensus -t 0.6 \
+ivar consensus -t 0.6 -q 20 -m 20 \
 -p work/${sample}.fa \
 >/dev/null 2>&1
 
