@@ -14,35 +14,22 @@ Dirancang untuk membantu pengguna memahami alur kerja bioinformatika mulai dari 
 
   <br>
 
+---
+
 ## 🔧 Tools Reference
 Sebelum menjalankan pipeline, pastikan Anda telah menginstal software berikut:
 
-| Software | Fungsi |
-|-----------|---------|
-| **Fastp** | Quality control, trimming, filtering reads |
-| **BWA-MEM** | Mapping reads Illumina ke reference genome |
-| **Minimap2** | Mapping reads ONT/PacBio ke reference genome |
-| **Samtools** | Manipulasi file SAM/BAM |
-| **Bcftools** | Variant calling dan manipulasi file VCF/BCF |
+| Software | Fungsi | Link |
+|-----------|---------|---------|
+| **Fastp** | Quality control, trimming, filtering reads | https://github.com/OpenGene/fastp |
+| **BWA-MEM** | Mapping reads Illumina ke reference genome | https://github.com/lh3/bwa |
+| **Minimap2** | Mapping reads ONT/PacBio ke reference genome | https://github.com/lh3/minimap2 |
+| **Samtools** | Manipulasi file SAM/BAM | https://github.com/samtools/samtools |
+| **Bcftools** | Variant calling dan consensus untuk ONT file | https://github.com/samtools/bcftools |
+| **iVar** | Membuat consensus untuk Illumina file | https://github.com/andersen-lab/ivar |
+
 <br>
 
----
-### Tools 
-
-#### Fastp
-https://github.com/OpenGene/fastp
-
-#### BWA-MEM
-https://github.com/lh3/bwa
-
-#### Minimap2
-https://github.com/lh3/minimap2
-
-#### Samtools
-https://github.com/samtools/samtools
-
-#### Bcftools
-https://github.com/samtools/bcftools
 
 ---
 
