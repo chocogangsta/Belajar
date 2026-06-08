@@ -1,5 +1,5 @@
 # In-House Bioinformatics Pipeline
----
+
 
 ## 🧬 In-House Bioinformatics Pipeline
 
@@ -11,10 +11,10 @@ Dirancang untuk membantu pengguna memahami alur kerja bioinformatika mulai dari 
 >
 > Pipeline ini hanya ditujukan untuk tujuan pendidikan dan penelitian. Tidak diperuntukkan untuk analisis klinis, diagnostik, maupun pelaporan resmi.
 
----
+
   <br>
 
-## 🔧 Persyaratan Aplikasi
+## 🔧 Tools Reference
 Sebelum menjalankan pipeline, pastikan Anda telah menginstal software berikut:
 
 | Software | Fungsi |
@@ -27,7 +27,7 @@ Sebelum menjalankan pipeline, pastikan Anda telah menginstal software berikut:
 <br>
 
 ---
-### Installation References
+### Tools 
 
 #### Fastp
 https://github.com/OpenGene/fastp
