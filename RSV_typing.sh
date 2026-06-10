@@ -91,39 +91,80 @@ bwa index "$RSV_B_REF" >/dev/null 2>&1
 ############################################################
 # FASTQ
 ############################################################
-arr=( $(ls $fastq_folder/*R1*.fastq.gz) )
+shopt -s nullglob
+
+illumina=( "$fastq_folder"/*_R1*.fastq.gz "$fastq_folder"/*R1_001.fastq.gz )
+
+if [ ${#illumina[@]} -gt 0 ]; then
+    PLATFORM="ILLUMINA"
+    arr=( "${illumina[@]}" )
+else
+    PLATFORM="ONT"
+    arr=( "$fastq_folder"/*.fastq.gz )
+fi
+
 total=${#arr[@]}
+
 echo ""
-echo "Samples detected : $total"
+echo "Platform detected : $PLATFORM"
+echo "Samples detected  : $total"
 echo ""
+
+if [ "$total" -eq 0 ]; then
+    echo "ERROR : No FASTQ found"
+    exit 1
+fi
+
 
 ############################################################
 # STEP 1 FASTP
 ############################################################
-echo -e "${YELLOW}[ STEP 1 ] FASTP TRIMMING${NC}"
+echo -e "${YELLOW}[ STEP 1 ] FASTQ TRIMMING${NC}"
 step_start=$(date +%s)
 
 i=0
-for r1 in "${arr[@]}"; do
-((i++))
 
-sample=$(basename "$r1" | sed 's/_R1.*//')
-r2=${r1/_R1/_R2}
+if [ "$PLATFORM" = "ILLUMINA" ]; then
 
-fastp -q 20 -A -i "$r1" -I "$r2" \
--o work/${sample}_R1.trim.fastq.gz \
--O work/${sample}_R2.trim.fastq.gz \
->/dev/null 2>&1
+    for r1 in "${arr[@]}"; do
+        ((i++))
 
-progress_bar $i $total "Trimming"
-done
+        sample=$(basename "$r1" | sed 's/_R1.*//')
+        r2=${r1/_R1/_R2}
+
+        fastp -q 20 -A \
+            -i "$r1" \
+            -I "$r2" \
+            -o work/${sample}_R1.trim.fastq.gz \
+            -O work/${sample}_R2.trim.fastq.gz \
+            >/dev/null 2>&1
+
+        progress_bar $i $total "Trimming"
+    done
+
+else
+
+    for fq in "${arr[@]}"; do
+        ((i++))
+
+        sample=$(basename "$fq" .fastq.gz)
+
+        fastp -q 15 -A \
+            -i "$fq" \
+            -o work/${sample}.trim.fastq.gz \
+            >/dev/null 2>&1
+
+        progress_bar $i $total "Trimming"
+    done
+
+fi
+
 echo ""
 
 step_end=$(date +%s)
 printf "\n${GREEN}✔ Completed (%02dm %02ds)${NC}\n\n" \
 $(((step_end-step_start)/60)) \
 $(((step_end-step_start)%60))
-
 ############################################################
 # STEP 2 RSV TYPE DETECTION
 ############################################################
@@ -134,38 +175,81 @@ RSVB=0
 step_start=$(date +%s)
 
 i=0
-for r1 in work/*R1.trim.fastq.gz; do
-((i++))
 
-sample=$(basename "$r1" _R1.trim.fastq.gz)
+if [ "$PLATFORM" = "ILLUMINA" ]; then
 
-bwa mem "$RSV_A_REF" work/${sample}_R1.trim.fastq.gz \
-work/${sample}_R2.trim.fastq.gz \
-> work/${sample}_A.sam 2>/dev/null
+    for r1 in work/*_R1.trim.fastq.gz; do
+        ((i++))
 
-bwa mem "$RSV_B_REF" work/${sample}_R1.trim.fastq.gz \
-work/${sample}_R2.trim.fastq.gz \
-> work/${sample}_B.sam 2>/dev/null
+        sample=$(basename "$r1" _R1.trim.fastq.gz)
 
-A=$(samtools view -q 20 -c -F4 work/${sample}_A.sam)
-B=$(samtools view -q 20 -c -F4 work/${sample}_B.sam)
+        bwa mem "$RSV_A_REF" \
+            work/${sample}_R1.trim.fastq.gz \
+            work/${sample}_R2.trim.fastq.gz \
+            > work/${sample}_A.sam 2>/dev/null
 
-if [ "$A" -gt "$B" ]; then
- mv work/${sample}_A.sam work/${sample}.sam
- rm work/${sample}_B.sam
- echo "$RSV_A_REF" > work/${sample}.ref
- echo "${sample} : RSV-A" >> $TYPING_SUMMARY
- ((RSVA++))
+        bwa mem "$RSV_B_REF" \
+            work/${sample}_R1.trim.fastq.gz \
+            work/${sample}_R2.trim.fastq.gz \
+            > work/${sample}_B.sam 2>/dev/null
+
+        A=$(samtools view -q 20 -c -F4 work/${sample}_A.sam)
+        B=$(samtools view -q 20 -c -F4 work/${sample}_B.sam)
+
+        if [ "$A" -gt "$B" ]; then
+            mv work/${sample}_A.sam work/${sample}.sam
+            rm work/${sample}_B.sam
+            echo "$RSV_A_REF" > work/${sample}.ref
+            echo "${sample} : RSV-A" >> "$TYPING_SUMMARY"
+            ((RSVA++))
+        else
+            mv work/${sample}_B.sam work/${sample}.sam
+            rm work/${sample}_A.sam
+            echo "$RSV_B_REF" > work/${sample}.ref
+            echo "${sample} : RSV-B" >> "$TYPING_SUMMARY"
+            ((RSVB++))
+        fi
+
+        progress_bar $i $total "Typing RSV"
+    done
+
 else
- mv work/${sample}_B.sam work/${sample}.sam
- rm work/${sample}_A.sam
- echo "$RSV_B_REF" > work/${sample}.ref
- echo "${sample} : RSV-B" >> $TYPING_SUMMARY
- ((RSVB++))
+
+    for fq in work/*.trim.fastq.gz; do
+        ((i++))
+
+        sample=$(basename "$fq" .trim.fastq.gz)
+
+        minimap2 -ax map-ont "$RSV_A_REF" \
+            "$fq" \
+            > work/${sample}_A.sam 2>/dev/null
+
+        minimap2 -ax map-ont "$RSV_B_REF" \
+            "$fq" \
+            > work/${sample}_B.sam 2>/dev/null
+
+        A=$(samtools view -q 20 -c -F4 work/${sample}_A.sam)
+        B=$(samtools view -q 20 -c -F4 work/${sample}_B.sam)
+
+        if [ "$A" -gt "$B" ]; then
+            mv work/${sample}_A.sam work/${sample}.sam
+            rm work/${sample}_B.sam
+            echo "$RSV_A_REF" > work/${sample}.ref
+            echo "${sample} : RSV-A" >> "$TYPING_SUMMARY"
+            ((RSVA++))
+        else
+            mv work/${sample}_B.sam work/${sample}.sam
+            rm work/${sample}_A.sam
+            echo "$RSV_B_REF" > work/${sample}.ref
+            echo "${sample} : RSV-B" >> "$TYPING_SUMMARY"
+            ((RSVB++))
+        fi
+
+        progress_bar $i $total "Typing RSV"
+    done
+
 fi
 
-progress_bar $i $total "Typing RSV"
-done
 echo ""
 
 step_end=$(date +%s)
@@ -174,7 +258,7 @@ $(((step_end-step_start)/60)) \
 $(((step_end-step_start)%60))
 
 echo "RSV Typing Summary"
-cat $TYPING_SUMMARY
+cat "$TYPING_SUMMARY"
 echo ""
 
 ############################################################
@@ -250,15 +334,36 @@ for bam in work/*.sorted.bam; do
 sample=$(basename "$bam" .sorted.bam)
 ref=$(cat work/${sample}.ref)
 
-samtools mpileup -aa -A -d 0 -Q 0 \
--f "$ref" "$bam"  2>> logs/bcftools.log |
-ivar consensus -t 0.6 -q 20 -m 20 \
--p work/${sample}.fa \
->/dev/null 2>&1
+# Variant Calling
+bcftools mpileup \
+-f "$ref" \
+-d 250 \
+-a FORMAT/DP \
+-Ou "$bam" 2>> logs/bcftools.log | \
+bcftools call \
+-m \
+--prior 0.0011 \
+--ploidy 1 \
+-Oz \
+-o work/${sample}.vcf.gz \
+2>> logs/bcftools.log 
 
+bcftools index -f work/${sample}.vcf.gz
+
+# Consensus
+bcftools consensus \
+-f "$ref" \
+-s - \
+--absent N \
+work/${sample}.vcf.gz \
+> work/${sample}.fa \
+2>> logs/bcftools.log
+
+sed -i "1s/.*/>${sample}/" work/${sample}.fa
 progress_bar $i $total "Consensus"
 done
 echo ""
+
 
 step_end=$(date +%s)
 printf "\n${GREEN}✔ Completed (%02dm %02ds)${NC}\n\n" \
@@ -281,7 +386,7 @@ runtime=$((end_total-start_total))
 
 echo "======================================================"
 echo " PIPELINE COMPLETED SUCCESSFULLY"
-echo "------------------------------------------------------"
+echo "======================================================"
 echo "Samples     : $total"
 echo "RSV-A       : $RSVA"
 echo "RSV-B       : $RSVB"
